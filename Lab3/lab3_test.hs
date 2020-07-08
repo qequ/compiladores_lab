@@ -23,14 +23,14 @@ data Ω = Normal Σ | Abort Σ | Out (Int, Ω) | In (Int -> Ω)
    * In     : (Z → Ω) → Ω
 -}
 
-update :: Σ -> Var -> MInt -> Σ
-update σ v (Just n) v' = if v == v' then n else σ v'
+update :: Σ -> Var -> Int -> Σ
+update σ v n v' = if v == v' then n else σ v'
 
---check_state_trans :: Σ -> Bool
---check_state_trans s = (s "x") == 3
+check_state_trans :: Σ -> Bool
+check_state_trans s = (s "z") == 1 && (s "x") == 0
 
---check_omega_ok :: Ω -> Bool
---check_omega_ok (Normal s) = check_state_trans s
+check_omega_ok :: Ω -> Bool
+check_omega_ok (Normal s) = check_state_trans s
 
 data Expr a where
   -- # Expresiones enteras
@@ -54,7 +54,7 @@ data Expr a where
   Assign :: Expr MInt -> Expr MInt -> Expr Ω               -- v := e
   Seq :: Expr Ω -> Expr Ω -> Expr Ω                -- c ; c'
   If :: Expr MBool -> Expr Ω -> Expr Ω -> Expr Ω                  -- if b then c else c'
-  Newvar :: Expr Ω -> Expr Ω -> Expr Ω              -- newvar v := e in e'
+  Newvar :: Var -> Expr MInt -> Expr Ω -> Expr Ω             -- newvar v := e in e'
   While :: Expr MBool -> Expr Ω -> Expr Ω                -- while b do c
   
   -- # Comandos Fallas
@@ -76,7 +76,7 @@ instance DomSem MInt where
   sem (Prod a b)   = \σ -> ((*)-^-) (sem a σ) (sem b σ)
   sem (Divs a b)   = \σ -> if (sem b σ) == Just 0 then Nothing else ((div)-^-) (sem a σ) (sem b σ)
   sem (Op a)       = \σ -> ((-)-^-) (Just 0) (sem a σ) 
-
+  
 
 instance DomSem MBool where
   -- Completar
@@ -89,7 +89,26 @@ instance DomSem MBool where
 instance DomSem Ω where
   -- Completar
   sem Skip = \σ -> Normal σ
-  sem (Assign (V v) e) = \σ -> Normal ((update σ (v) (sem e σ)))
+  sem (Assign (V v) e) = \σ -> (update_var σ v (sem e σ))
+  sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
+  sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
+  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
+
+
+get_value_var :: Σ -> Var -> Int
+get_value_var s v = (s v)
+
+
+unpack_mint :: Maybe Int -> Int
+unpack_mint (Just n) = n
+
+
+update_var :: Σ -> Var -> Maybe Int  -> Ω
+update_var σ _ Nothing = Abort σ
+update_var σ v (Just n) = Normal (update σ v n)
+
+--update :: Σ -> Var -> Int -> Σ
+
 
 (>>==) :: (Maybe a, Σ) -> (a -> Ω) -> Ω
 (>>==) (Nothing, σ) _ = Abort σ
@@ -152,9 +171,11 @@ state s | s == "z" = 12
 -- sem (Divs (CInt 2) (Plus (V "x") (CInt  0))) state == Nothing
 -- sem (Divs (Op (Prod (CInt 2) (CInt 2))) (Plus (CInt 1) (CInt 1))) state == Just (-2)
 -- sem (Eq (Divs (Op (Prod (CInt 2) (CInt 2))) (Plus (CInt 1) (CInt 1))) (V "x")) state == Just False
-
+-- sem (Eq (V "x") (V "z")) state == Just False
 
 -- ejemplos LIS
 --  sem (Assign (V "x") (CInt 3)) state 
-
+--  sem (Seq (Assign (V "z") (CInt 3)) (Assign (V "x") (CInt 3))) state
+--  sem (If (Eq (V "x") (V "z")) (Assign (V "x") (CInt 3)) (Assign (V "z") (CInt 3))) state
+--  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
 
