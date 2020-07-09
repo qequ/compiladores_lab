@@ -94,6 +94,12 @@ instance DomSem Ω where
   sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
 --  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
+  sem (While b c) = \σ -> fix(((*.)(\σ -> if (sem b σ) == Just True then (sem c σ) else (Normal σ)))) 
+
+
+-- función F de while
+--f :: (Σ -> Ω) -> (Σ -> Ω)
+--f = (\w -> \σ -> if (sem b σ) == (Just True) then (*.) w (sem c σ) else (Normal σ) )
 
 
 -- funciones auxiliares de ecuaciones semánticas
@@ -104,6 +110,7 @@ get_value_var s v = (s v)
 unpack_mint :: Maybe Int -> Int
 unpack_mint (Just n) = n
 
+
 eval_newvar ::  Expr Ω -> Σ -> Var -> Expr MInt -> Ω
 eval_newvar c σ v e = if (sem e σ) == Nothing then Abort σ else (sem c (update σ v (unpack_mint (sem e σ))))
 
@@ -112,7 +119,6 @@ update_var :: Σ -> Var -> Maybe Int  -> Ω
 update_var σ _ Nothing = Abort σ
 update_var σ v (Just n) = Normal (update σ v n)
 
---update :: Σ -> Var -> Int -> Σ
 
 
 (>>==) :: (Maybe a, Σ) -> (a -> Ω) -> Ω
@@ -183,4 +189,10 @@ state s | s == "z" = 12
 --  sem (Seq (Assign (V "z") (CInt 3)) (Assign (V "x") (CInt 3))) state
 --  sem (If (Eq (V "x") (V "z")) (Assign (V "x") (CInt 3)) (Assign (V "z") (CInt 3))) state
 --  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
+--  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
+--  sem ( While () (Assign (V "x") (CInt 1))) state
 
+
+check_abort :: Ω -> Bool
+check_abort (Abort e) = True
+check_abort x = False
