@@ -27,7 +27,7 @@ update :: Σ -> Var -> Int -> Σ
 update σ v n v' = if v == v' then n else σ v'
 
 check_state_trans :: Σ -> Bool
-check_state_trans s = (s "z") == 1 && (s "x") == 0
+check_state_trans s = (s "x") == 3
 
 check_omega_ok :: Ω -> Bool
 check_omega_ok (Normal s) = check_state_trans s
@@ -58,8 +58,8 @@ data Expr a where
   While :: Expr MBool -> Expr Ω -> Expr Ω                -- while b do c
   
   -- # Comandos Fallas
-  -- fail
-  -- catch c with c'
+  Fail :: Expr Ω-- fail
+  Catch :: Expr Ω -> Expr Ω -> Expr Ω-- catch c with c'
 
   -- # Comandos IO
   -- !e
@@ -96,10 +96,14 @@ instance DomSem Ω where
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
   sem (While b c) = \σ -> fix(((*.)(\σ -> if (sem b σ) == Just True then (sem c σ) else (Normal σ)))) 
 
+  sem Fail = \σ -> Abort σ
+  sem (Catch c0 c1) = \σ -> (+.) (sem c1) (sem c0 σ)
+
+  
 
 -- función F de while
---f :: (Σ -> Ω) -> (Σ -> Ω)
---f = (\w -> \σ -> if (sem b σ) == (Just True) then (*.) w (sem c σ) else (Normal σ) )
+--f :: (Σ -> Ω)
+--f = \σ -> if (sem b σ) == (Just True) then (sem c σ) else (Normal σ) 
 
 
 -- funciones auxiliares de ecuaciones semánticas
@@ -190,7 +194,12 @@ state s | s == "z" = 12
 --  sem (If (Eq (V "x") (V "z")) (Assign (V "x") (CInt 3)) (Assign (V "z") (CInt 3))) state
 --  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
 --  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
---  sem ( While () (Assign (V "x") (CInt 1))) state
+--  sem ( While (CBool True) (Assign (V "x") (CInt 1))) state = ⊥
+--  sem ( While (Lt (V "x") (CInt 10)) (Assign (V "x") (Plus (V "x") (CInt 1)))) state
+
+--ejemplos LIS + fallas
+--  sem (Fail) state
+--  sem (Catch (Assign (V "x") (Divs (CInt 2) (CInt 0))) (Assign (V "x") (CInt 3))) state  -> σx = 3
 
 
 check_abort :: Ω -> Bool
