@@ -92,15 +92,20 @@ instance DomSem Ω where
   sem (Assign (V v) e) = \σ -> (update_var σ v (sem e σ))
   sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
   sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
-  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
+--  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
+  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
 
 
+-- funciones auxiliares de ecuaciones semánticas
 get_value_var :: Σ -> Var -> Int
 get_value_var s v = (s v)
 
 
 unpack_mint :: Maybe Int -> Int
 unpack_mint (Just n) = n
+
+eval_newvar ::  Expr Ω -> Σ -> Var -> Expr MInt -> Ω
+eval_newvar c σ v e = if (sem e σ) == Nothing then Abort σ else (sem c (update σ v (unpack_mint (sem e σ))))
 
 
 update_var :: Σ -> Var -> Maybe Int  -> Ω
