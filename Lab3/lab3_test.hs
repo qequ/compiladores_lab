@@ -27,7 +27,7 @@ update :: Σ -> Var -> Int -> Σ
 update σ v n v' = if v == v' then n else σ v'
 
 check_state_trans :: Σ -> Bool
-check_state_trans s = (s "x") == 3
+check_state_trans s = (s "x") == 10
 
 check_omega_ok :: Ω -> Bool
 check_omega_ok (Normal s) = check_state_trans s
@@ -94,7 +94,7 @@ instance DomSem Ω where
   sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
 --  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
-  sem (While b c) = \σ -> fix(((*.)(\σ -> if (sem b σ) == Just True then (sem c σ) else (Normal σ)))) 
+  sem (While b c) = \σ -> (fix (\w -> \σ -> if (sem b σ) == Just True then (*.) w (sem c σ) else (Normal σ))) σ 
 
   -- ecuaciones semánticas para fallas
   sem Fail = \σ -> Abort σ
@@ -105,8 +105,8 @@ instance DomSem Ω where
   sem (SIn (V v) ) =  \σ -> In (\i -> Normal (update σ v i))
 
 -- función F de while
---f :: (Σ -> Ω)
---f = \σ -> if (sem b σ) == (Just True) then (sem c σ) else (Normal σ) 
+--f :: (Σ -> Ω) -> (Σ -> Ω)
+--f = \w -> \σ -> if (sem b σ) then (*.) w (sem c σ) else (Normal σ)
 
 
 -- funciones auxiliares de ecuaciones semánticas
@@ -202,7 +202,6 @@ state s | s == "z" = 12
 --  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
 --  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
 --  sem ( While (CBool True) (Assign (V "x") (CInt 1))) state = ⊥
---  sem ( While (Lt (V "x") (CInt 10)) (Assign (V "x") (Plus (V "x") (CInt 1)))) state
 
 --ejemplos LIS + fallas
 --  sem (Fail) state
@@ -225,3 +224,26 @@ eval_out_ex = eval (CInt 2) state
 check_abort :: Ω -> Bool
 check_abort (Abort e) = True
 check_abort x = False
+
+
+
+
+ej2 :: Expr Ω
+ej2 = While (Lt (V "y") (CInt 10)) $
+            Seq (Seq (Seq (SIn (V "x"))
+                          (SOut $ V "x")
+                     )
+                     (SOut $ V "y")
+                )
+                (Assign (V "y") (Plus (V "y") (CInt 1)))
+
+eval_ej2 :: IO ()
+eval_ej2 = eval ej2 (\_ -> 0)
+
+ej1 :: Expr Ω
+ej1 = While (Lt (V "x") (CInt 10)) $
+            Seq (SOut $ V "x")
+                (Assign (V "x") (Plus (V "x") (CInt 1)))
+
+eval_ej1 :: IO ()
+eval_ej1 = eval ej1 (\_ -> 0)
