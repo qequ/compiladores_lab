@@ -102,7 +102,7 @@ instance DomSem Ω where
 
   --ecuaciones semánticas para IO
   sem (SOut e) = \σ -> eval_sout (sem e σ) σ
-
+  sem (SIn (V v) ) =  \σ -> In (\i -> Normal (update σ v i))
 
 -- función F de while
 --f :: (Σ -> Ω)
@@ -212,10 +212,14 @@ state s | s == "z" = 12
 -- sem (SOut (CInt 2)) state
 -- sem (SOut (Divs (CInt 2) (V "x"))) state
 -- sem (SOut (V "x")) state
+-- sem (SIn (V "x")) state
+-- sem (Seq (SIn (V "x")) (SOut (V "x"))) state
 
+eval_in_ex :: IO ()
+eval_in_ex = eval (Seq (SIn (V "x")) (SOut (V "x"))) state
 
-eval_ex :: IO ()
-eval_ex = eval (CInt 2) state
+eval_out_ex :: IO ()
+eval_out_ex = eval (CInt 2) state
 
 
 check_abort :: Ω -> Bool
