@@ -63,7 +63,7 @@ data Expr a where
 
   -- # Comandos IO
   SOut :: Expr MInt -> Expr Ω -- !e
-  SIn :: Expr MInt -> Expr Ω-- ?v
+  SIn :: Var -> Expr Ω-- ?v
 
 class DomSem dom where 
   sem :: Expr dom -> Σ -> dom
@@ -102,7 +102,7 @@ instance DomSem Ω where
 
   --ecuaciones semánticas para IO
   sem (SOut e) = \σ -> eval_sout (sem e σ) σ
-  sem (SIn (V v) ) =  \σ -> In (\i -> Normal (update σ v i))
+  sem (SIn v ) =  \σ -> In (\i -> Normal (update σ v i))
 
 -- función F de while
 --f :: (Σ -> Ω) -> (Σ -> Ω)
@@ -215,7 +215,7 @@ state s | s == "z" = 12
 -- sem (Seq (SIn (V "x")) (SOut (V "x"))) state
 
 eval_in_ex :: IO ()
-eval_in_ex = eval (Seq (SIn (V "x")) (SOut (V "x"))) state
+eval_in_ex = eval (Seq (SIn "x") (SOut (V "x"))) state
 
 eval_out_ex :: IO ()
 eval_out_ex = eval (CInt 2) state
@@ -230,15 +230,13 @@ check_abort x = False
 
 ej2 :: Expr Ω
 ej2 = While (Lt (V "y") (CInt 10)) $
-            Seq (Seq (Seq (SIn (V "x"))
+            Seq (Seq (Seq (SIn "x")
                           (SOut $ V "x")
                      )
                      (SOut $ V "y")
                 )
                 (Assign (V "y") (Plus (V "y") (CInt 1)))
 
-eval_ej2 :: IO ()
-eval_ej2 = eval ej2 (\_ -> 0)
 
 ej1 :: Expr Ω
 ej1 = While (Lt (V "x") (CInt 10)) $
@@ -247,3 +245,15 @@ ej1 = While (Lt (V "x") (CInt 10)) $
 
 eval_ej1 :: IO ()
 eval_ej1 = eval ej1 (\_ -> 0)
+
+
+ej3 :: Expr Ω
+ej3 = Seq (Seq (SIn "x")
+               (Newvar "x" (CInt 10)
+                       (SOut $ V "x")
+               )
+          )
+          (SOut $ V "x")
+
+eval_ej3 :: IO ()
+eval_ej3 = eval ej3 (\_ -> 0)
