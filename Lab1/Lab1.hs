@@ -35,7 +35,7 @@ instance DomSem Bool where
 
 
 -- ejemplos
--- sem (Plus (CInt 2) (Prod (CInt 3)(CInt 3)))
--- sem (Plus (Divs (CInt 8)(CInt 2)) (Op (CInt 2)))
--- sem (And (CBool True)(Not (CBool False)))
--- sem (Eq (CInt 4)(Prod (CInt 2)(CInt 2)))
+-- sem (Plus (CInt 2) (Prod (CInt 3)(CInt 3))) = 11
+-- sem (Plus (Divs (CInt 8)(CInt 2)) (Op (CInt 2))) = 2
+-- sem (And (CBool True)(Not (CBool False))) = True
+-- sem (Eq (CInt 4)(Prod (CInt 2)(CInt 2))) = True
