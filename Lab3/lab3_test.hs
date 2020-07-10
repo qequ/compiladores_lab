@@ -62,8 +62,8 @@ data Expr a where
   Catch :: Expr Ω -> Expr Ω -> Expr Ω-- catch c with c'
 
   -- # Comandos IO
-  -- !e
-  -- ?v
+  SOut :: Expr MInt -> Expr Ω -- !e
+  SIn :: Expr MInt -> Expr Ω-- ?v
 
 class DomSem dom where 
   sem :: Expr dom -> Σ -> dom
@@ -87,7 +87,7 @@ instance DomSem MBool where
   sem (Lt e1 e2) = \σ -> ((<)-^-) (sem e1 σ) (sem e2 σ)
 
 instance DomSem Ω where
-  -- Completar
+  --ecuaciones semánticas para LIS
   sem Skip = \σ -> Normal σ
   sem (Assign (V v) e) = \σ -> (update_var σ v (sem e σ))
   sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
@@ -96,10 +96,13 @@ instance DomSem Ω where
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
   sem (While b c) = \σ -> fix(((*.)(\σ -> if (sem b σ) == Just True then (sem c σ) else (Normal σ)))) 
 
+  -- ecuaciones semánticas para fallas
   sem Fail = \σ -> Abort σ
   sem (Catch c0 c1) = \σ -> (+.) (sem c1) (sem c0 σ)
 
-  
+  --ecuaciones semánticas para IO
+  sem (SOut e) = \σ -> eval_sout (sem e σ) σ
+
 
 -- función F de while
 --f :: (Σ -> Ω)
@@ -123,6 +126,10 @@ update_var :: Σ -> Var -> Maybe Int  -> Ω
 update_var σ _ Nothing = Abort σ
 update_var σ v (Just n) = Normal (update σ v n)
 
+
+eval_sout :: Maybe Int -> Σ -> Ω
+eval_sout (Just n) σ = Out (n, Normal σ)
+eval_sout Nothing σ = Abort σ
 
 
 (>>==) :: (Maybe a, Σ) -> (a -> Ω) -> Ω
@@ -200,6 +207,15 @@ state s | s == "z" = 12
 --ejemplos LIS + fallas
 --  sem (Fail) state
 --  sem (Catch (Assign (V "x") (Divs (CInt 2) (CInt 0))) (Assign (V "x") (CInt 3))) state  -> σx = 3
+
+--ejemplos LIS + fallas + IO
+-- sem (SOut (CInt 2)) state
+-- sem (SOut (Divs (CInt 2) (V "x"))) state
+-- sem (SOut (V "x")) state
+
+
+eval_ex :: IO ()
+eval_ex = eval (CInt 2) state
 
 
 check_abort :: Ω -> Bool
