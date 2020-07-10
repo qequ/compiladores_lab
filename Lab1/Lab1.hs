@@ -13,7 +13,7 @@ data Expr a where
   -- logical operators
   And  :: Expr Bool -> Expr Bool -> Expr Bool
   Not  :: Expr Bool -> Expr Bool
-  Comp :: Expr Int -> Expr Int -> Expr Bool
+  Eq :: Expr Int -> Expr Int -> Expr Bool
 
 
 --funcion semantica
@@ -31,4 +31,11 @@ instance DomSem Bool where
    sem (CBool a) = a
    sem (And a b) = (sem a) && (sem b)
    sem (Not a) = not (sem a)
-   sem (Comp a b) = (sem a) == (sem b)
+   sem (Eq a b) = (sem a) == (sem b)
+
+
+-- ejemplos
+-- sem (Plus (CInt 2) (Prod (CInt 3)(CInt 3)))
+-- sem (Plus (Divs (CInt 8)(CInt 2)) (Op (CInt 2)))
+-- sem (And (CBool True)(Not (CBool False)))
+-- sem (Eq (CInt 4)(Prod (CInt 2)(CInt 2)))
