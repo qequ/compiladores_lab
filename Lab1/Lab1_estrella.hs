@@ -26,23 +26,17 @@ class DomSem dom where
 
 instance DomSem MInt where
    sem (CInt a) = (Just a)
-   sem (Plus a b) = ((+)-^-) (sem a) (sem b)
-   sem (Prod a b) = ((*)-^-) (sem a)  (sem b)
-   sem (Divs a b) = if (sem b) == Just 0 then Nothing else ((div)-^-) (sem a) (sem b)
-   sem (Op a) = ((-)-^-) (Just 0) (sem a)
+   sem (Plus a b) = liftA2 (+) (sem a) (sem b)
+   sem (Prod a b) = liftA2 (*) (sem a)  (sem b)
+   sem (Divs a b) = if (sem b) == Just 0 then Nothing else liftA2 (div) (sem a) (sem b)
+   sem (Op a) = liftA2 (-) (Just 0) (sem a)
 
 instance DomSem MBool where
    sem (CBool a) = (Just a)
-   sem (And a b) = ((&&)-^-) (sem a) (sem b)
-   sem (Not a) = ((not)-^) (sem a)
-   sem (Eq a b) = ((==)-^-) (sem a) (sem b)
+   sem (And a b) = liftA2 (&&) (sem a) (sem b)
+   sem (Not a) = liftA (not) (sem a)
+   sem (Eq a b) = liftA2 (==) (sem a) (sem b)
 
-
-(-^-) :: (a -> b -> c) -> (Maybe a -> Maybe b -> Maybe c)
-(-^-) = liftA2
-
-(-^) :: (a -> b) -> (Maybe a -> Maybe b)
-(-^) = liftA
 
 -- ejemplos
 -- sem (Plus (CInt 2) (Prod (CInt 3)(CInt 3))) == Just 11
