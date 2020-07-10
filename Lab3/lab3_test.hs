@@ -26,12 +26,6 @@ data Ω = Normal Σ | Abort Σ | Out (Int, Ω) | In (Int -> Ω)
 update :: Σ -> Var -> Int -> Σ
 update σ v n v' = if v == v' then n else σ v'
 
-check_state_trans :: Σ -> Bool
-check_state_trans s = (s "x") == 10
-
-check_omega_ok :: Ω -> Bool
-check_omega_ok (Normal s) = check_state_trans s
-
 data Expr a where
   -- # Expresiones enteras
   CInt :: Int       -> Expr MInt                -- n
@@ -94,7 +88,7 @@ instance DomSem Ω where
   sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
 --  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
-  sem (While b c) = \σ -> (fix (\w -> \σ -> if (sem b σ) == Just True then (*.) w (sem c σ) else (Normal σ))) σ 
+  sem (While b c) = \σ -> (fix (\w -> \σ -> if (sem b σ) == Nothing then (Abort σ) else if (sem b σ) == Just True then (*.) w (sem c σ) else (Normal σ))) σ 
 
   -- ecuaciones semánticas para fallas
   sem Fail = \σ -> Abort σ
@@ -202,6 +196,7 @@ state s | s == "z" = 12
 --  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
 --  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
 --  sem ( While (CBool True) (Assign (V "x") (CInt 1))) state = ⊥
+--  sem (While (Lt (CInt 0) (Divs (CInt 1) (V "x"))) (Assign (V "x") (CInt 1))) state
 
 --ejemplos LIS + fallas
 --  sem (Fail) state
@@ -214,6 +209,9 @@ state s | s == "z" = 12
 -- sem (SIn (V "x")) state
 -- sem (Seq (SIn (V "x")) (SOut (V "x"))) state
 
+
+-- funciones de testeo
+
 eval_in_ex :: IO ()
 eval_in_ex = eval (Seq (SIn "x") (SOut (V "x"))) state
 
@@ -224,8 +222,6 @@ eval_out_ex = eval (CInt 2) state
 check_abort :: Ω -> Bool
 check_abort (Abort e) = True
 check_abort x = False
-
-
 
 
 ej2 :: Expr Ω
@@ -257,3 +253,10 @@ ej3 = Seq (Seq (SIn "x")
 
 eval_ej3 :: IO ()
 eval_ej3 = eval ej3 (\_ -> 0)
+
+
+check_state_trans :: Σ -> Bool
+check_state_trans s = (s "x") == 10
+
+check_omega_ok :: Ω -> Bool
+check_omega_ok (Normal s) = check_state_trans s
