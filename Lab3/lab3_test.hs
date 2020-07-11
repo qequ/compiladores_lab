@@ -186,18 +186,19 @@ state s | s == "z" = 12
 -- sem (Eq (V "x") (V "z")) state == Just False
 
 -- ejemplos LIS
---  sem (Assign "x" (CInt 3)) state 
---  sem (Seq (Assign "z" (CInt 3)) (Assign "x" (CInt 3))) state
---  sem (If (Eq (V "x") (V "z")) (Assign "x" (CInt 3)) (Assign "z" (CInt 3))) state
---  sem (Newvar "x" (CInt 1) (Assign "z" (V "x"))) state
---  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
---  sem ( While (CBool True) (Assign "x" (CInt 1))) state = ⊥
---  sem (While (Lt (CInt 0) (Divs (CInt 1) (V "x"))) (Assign "x" (CInt 1))) state
---  sem (If (Eq (CInt 2)(Divs (CInt 1)(V "x"))) (Assign "x" (CInt 1)) (Skip))
+--  sem (Assign "x" (CInt 3)) state -> σx == 3
+--  sem (Seq (Assign "z" (CInt 3)) (Assign "x" (CInt 3))) state -> σx == 3 && σz == 3
+--  sem (If (Eq (V "x") (V "z")) (Assign "x" (CInt 3)) (Assign "z" (CInt 3))) state -> σz == 3 && σx == 0
+--  sem (Newvar "x" (CInt 1) (Assign "z" (V "x"))) state -> σz = 1 && σx == 0
+--  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state -> Abort 
+--  sem ( While (CBool True) (Assign "x" (CInt 1))) state -> ⊥
+--  sem (While (Lt (CInt 0) (Divs (CInt 1) (V "x"))) (Assign "x" (CInt 1))) state -> Abort
+--  sem (If (Eq (CInt 2)(Divs (CInt 1)(V "x"))) (Assign "x" (CInt 1)) (Skip)) state ->  Abort
 
 --ejemplos LIS + fallas
---  sem (Fail) state
---  sem (Catch (Assign "x" (Divs (CInt 2) (CInt 0))) (Assign "x" (CInt 3))) state  -> σx = 3
+--  sem (Fail) state -> Abort
+--  sem (Catch (Assign "x" (Divs (CInt 2) (CInt 0))) (Assign "x" (CInt 3))) state  -> σx == 3
+--  sem (Catch (Assign "x" (CInt 2)) (Assign "x" (CInt 0))) state-> σx == 2
 
 --ejemplos LIS + fallas + IO
 -- sem (SOut (CInt 2)) state
@@ -205,9 +206,18 @@ state s | s == "z" = 12
 -- sem (SOut (V "x")) state
 -- sem (SIn (V "x")) state
 -- sem (Seq (SIn (V "x")) (SOut (V "x"))) state
+-- sem (While (CBool True) (SOut(V "x")) ) state
 
 
 -- funciones de testeo
+
+check_state_trans :: Σ -> Bool
+check_state_trans s = (s "x") == 2
+
+check_omega_ok :: Ω -> Bool
+check_omega_ok (Normal s) = check_state_trans s
+
+
 
 eval_in_ex :: IO ()
 eval_in_ex = eval (Seq (SIn "x") (SOut (V "x"))) state
@@ -255,9 +265,15 @@ eval_ej3 :: IO ()
 eval_ej3 = eval ej3 (\_ -> 0)
 
 
+ej4 :: Expr Ω
+ej4 = While (CBool True) (SOut(V "x"))
 
-check_state_trans :: Σ -> Bool
-check_state_trans s = (s "x") == 10
+eval_ej4 :: IO ()
+eval_ej4 = eval ej4 (\_ -> 0)
 
-check_omega_ok :: Ω -> Bool
-check_omega_ok (Normal s) = check_state_trans s
+
+ej5 :: Expr Ω
+ej5 = (SOut (Divs (CInt 2) (V "x")))
+
+eval_ej5 :: IO ()
+eval_ej5 = eval ej5 (\_ -> 0)
