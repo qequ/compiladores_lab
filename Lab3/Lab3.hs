@@ -44,7 +44,7 @@ data Expr a where
   Or :: Expr MBool -> Expr MBool -> Expr MBool
 
 
-  -- # Comandos LIS
+  -- # Expresiones LIS
   Skip :: Expr Ω                                -- skip
   Assign :: Var -> Expr MInt -> Expr Ω               -- v := e
   Seq :: Expr Ω -> Expr Ω -> Expr Ω                -- c ; c'
@@ -52,11 +52,11 @@ data Expr a where
   Newvar :: Var -> Expr MInt -> Expr Ω -> Expr Ω             -- newvar v := e in e'
   While :: Expr MBool -> Expr Ω -> Expr Ω                -- while b do c
   
-  -- # Comandos Fallas
+  -- # Expresiones Fallas
   Fail :: Expr Ω-- fail
   Catch :: Expr Ω -> Expr Ω -> Expr Ω-- catch c with c'
 
-  -- # Comandos IO
+  -- # Expresiones IO
   SOut :: Expr MInt -> Expr Ω -- !e
   SIn :: Var -> Expr Ω-- ?v
 
@@ -279,6 +279,7 @@ eval_ej5 :: IO ()
 eval_ej5 = eval ej5 (\_ -> 0)
 
 
+-- n-esimo número de fibonacci
 fibo :: Expr Ω
 fibo = (Seq (SIn "n")
       $ Seq (Assign "x" (CInt 0))
