@@ -86,7 +86,7 @@ instance DomSem Ω where
   sem (Assign v e) = \σ -> (update_var σ v (sem e σ))
   sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
   sem (If b c0 c1) = \σ -> if (sem b σ) == Nothing then Abort σ else if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
-  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
+  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (σ v)) (eval_newvar c σ v e)
   sem (While b c) = \σ -> (fix (\w -> \σ -> if (sem b σ) == Nothing then (Abort σ) else if (sem b σ) == Just True then (*.) w (sem c σ) else (Normal σ))) σ 
 
   -- ecuaciones semánticas para fallas
@@ -104,10 +104,6 @@ instance DomSem Ω where
 
 
 -- funciones auxiliares de ecuaciones semánticas
-get_value_var :: Σ -> Var -> Int
-get_value_var s v = (s v)
-
-
 unpack_mint :: Maybe Int -> Int
 unpack_mint (Just n) = n
 
