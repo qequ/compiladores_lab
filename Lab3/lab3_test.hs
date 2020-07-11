@@ -64,7 +64,6 @@ class DomSem dom where
   sem :: Expr dom -> Σ -> dom
 
 instance DomSem MInt where
-  -- Completar
   sem (CInt a)     = \_ -> Just a
   sem (V v)        = \σ -> Just $ σ v
   sem (Plus e1 e2) = \σ -> ((+)-^-) (sem e1 σ) (sem e2 σ)
@@ -74,7 +73,6 @@ instance DomSem MInt where
   
 
 instance DomSem MBool where
-  -- Completar
   sem (CBool a)  = \_ -> Just a
   sem (And a b)  = \σ -> ((&&)-^-) (sem a σ) (sem b σ)
   sem (Not a)    = \σ -> ((not)-^) (sem a σ) 
@@ -87,8 +85,7 @@ instance DomSem Ω where
   sem Skip = \σ -> Normal σ
   sem (Assign v e) = \σ -> (update_var σ v (sem e σ))
   sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
-  sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
---  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
+  sem (If b c0 c1) = \σ -> if (sem b σ) == Nothing then Abort σ else if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
   sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (eval_newvar c σ v e)
   sem (While b c) = \σ -> (fix (\w -> \σ -> if (sem b σ) == Nothing then (Abort σ) else if (sem b σ) == Just True then (*.) w (sem c σ) else (Normal σ))) σ 
 
@@ -99,6 +96,7 @@ instance DomSem Ω where
   --ecuaciones semánticas para IO
   sem (SOut e) = \σ -> eval_sout (sem e σ) σ
   sem (SIn v ) =  \σ -> In (\i -> Normal (update σ v i))
+
 
 -- función F de while
 --f :: (Σ -> Ω) -> (Σ -> Ω)
@@ -192,17 +190,18 @@ state s | s == "z" = 12
 -- sem (Eq (V "x") (V "z")) state == Just False
 
 -- ejemplos LIS
---  sem (Assign (V "x") (CInt 3)) state 
---  sem (Seq (Assign (V "z") (CInt 3)) (Assign (V "x") (CInt 3))) state
---  sem (If (Eq (V "x") (V "z")) (Assign (V "x") (CInt 3)) (Assign (V "z") (CInt 3))) state
---  sem (Newvar "x" (CInt 1) (Assign (V "z") (V "x"))) state
+--  sem (Assign "x" (CInt 3)) state 
+--  sem (Seq (Assign "z" (CInt 3)) (Assign "x" (CInt 3))) state
+--  sem (If (Eq (V "x") (V "z")) (Assign "x" (CInt 3)) (Assign "z" (CInt 3))) state
+--  sem (Newvar "x" (CInt 1) (Assign "z" (V "x"))) state
 --  sem (Newvar "x" (Divs (CInt 2) (CInt 0)) (Skip)) state
---  sem ( While (CBool True) (Assign (V "x") (CInt 1))) state = ⊥
---  sem (While (Lt (CInt 0) (Divs (CInt 1) (V "x"))) (Assign (V "x") (CInt 1))) state
+--  sem ( While (CBool True) (Assign "x" (CInt 1))) state = ⊥
+--  sem (While (Lt (CInt 0) (Divs (CInt 1) (V "x"))) (Assign "x" (CInt 1))) state
+--  sem (If (Eq (CInt 2)(Divs (CInt 1)(V "x"))) (Assign "x" (CInt 1)) (Skip))
 
 --ejemplos LIS + fallas
 --  sem (Fail) state
---  sem (Catch (Assign (V "x") (Divs (CInt 2) (CInt 0))) (Assign (V "x") (CInt 3))) state  -> σx = 3
+--  sem (Catch (Assign "x" (Divs (CInt 2) (CInt 0))) (Assign "x" (CInt 3))) state  -> σx = 3
 
 --ejemplos LIS + fallas + IO
 -- sem (SOut (CInt 2)) state
@@ -233,7 +232,7 @@ ej2 = While (Lt (V "y") (CInt 10)) $
                      )
                      (SOut $ V "y")
                 )
-                (Assign (V "y") (Plus (V "y") (CInt 1)))
+                (Assign "y" (Plus (V "y") (CInt 1)))
 
 
 ej3 :: Expr Ω
