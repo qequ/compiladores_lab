@@ -41,11 +41,12 @@ data Expr a where
   Lt   :: Expr MInt  -> Expr MInt -> Expr MBool -- e < e'
   And  :: Expr MBool -> Expr MBool -> Expr MBool
   Not  :: Expr MBool -> Expr MBool
+  Or :: Expr MBool -> Expr MBool -> Expr MBool
 
 
   -- # Comandos LIS
   Skip :: Expr Ω                                -- skip
-  Assign :: Expr MInt -> Expr MInt -> Expr Ω               -- v := e
+  Assign :: Var -> Expr MInt -> Expr Ω               -- v := e
   Seq :: Expr Ω -> Expr Ω -> Expr Ω                -- c ; c'
   If :: Expr MBool -> Expr Ω -> Expr Ω -> Expr Ω                  -- if b then c else c'
   Newvar :: Var -> Expr MInt -> Expr Ω -> Expr Ω             -- newvar v := e in e'
@@ -79,11 +80,12 @@ instance DomSem MBool where
   sem (Not a)    = \σ -> ((not)-^) (sem a σ) 
   sem (Eq e1 e2) = \σ -> ((==)-^-) (sem e1 σ) (sem e2 σ)
   sem (Lt e1 e2) = \σ -> ((<)-^-) (sem e1 σ) (sem e2 σ)
+  sem (Or a b)   = \σ -> ((||)-^-) (sem a σ) (sem b σ)
 
 instance DomSem Ω where
   --ecuaciones semánticas para LIS
   sem Skip = \σ -> Normal σ
-  sem (Assign (V v) e) = \σ -> (update_var σ v (sem e σ))
+  sem (Assign v e) = \σ -> (update_var σ v (sem e σ))
   sem (Seq c1 c2) = \σ -> (*.) (sem c2) (sem c1 σ) 
   sem (If b c0 c1) = \σ -> if (sem b σ) == (Just True) then (sem c0 σ) else (sem c1 σ)
 --  sem (Newvar v e c) = \σ -> (†.) (\s -> update s v (get_value_var σ v)) (sem c (update σ v (unpack_mint (sem e σ))))
@@ -223,7 +225,7 @@ check_abort :: Ω -> Bool
 check_abort (Abort e) = True
 check_abort x = False
 
-
+{-
 ej2 :: Expr Ω
 ej2 = While (Lt (V "y") (CInt 10)) $
             Seq (Seq (Seq (SIn "x")
@@ -232,15 +234,6 @@ ej2 = While (Lt (V "y") (CInt 10)) $
                      (SOut $ V "y")
                 )
                 (Assign (V "y") (Plus (V "y") (CInt 1)))
-
-
-ej1 :: Expr Ω
-ej1 = While (Lt (V "x") (CInt 10)) $
-            Seq (SOut $ V "x")
-                (Assign (V "x") (Plus (V "x") (CInt 1)))
-
-eval_ej1 :: IO ()
-eval_ej1 = eval ej1 (\_ -> 0)
 
 
 ej3 :: Expr Ω
@@ -253,6 +246,17 @@ ej3 = Seq (Seq (SIn "x")
 
 eval_ej3 :: IO ()
 eval_ej3 = eval ej3 (\_ -> 0)
+
+-}
+
+ej1 :: Expr Ω
+ej1 = While (Lt (V "x") (CInt 10)) $
+            Seq (SOut $ V "x")
+                (Assign "x" (Plus (V "x") (CInt 1)))
+
+eval_ej1 :: IO ()
+eval_ej1 = eval ej1 (\_ -> 0)
+
 
 
 check_state_trans :: Σ -> Bool
