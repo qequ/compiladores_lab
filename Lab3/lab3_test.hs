@@ -277,3 +277,26 @@ ej5 = (SOut (Divs (CInt 2) (V "x")))
 
 eval_ej5 :: IO ()
 eval_ej5 = eval ej5 (\_ -> 0)
+
+
+fibo :: Expr Ω
+fibo = (Seq (SIn "n")
+      $ Seq (Assign "x" (CInt 0))
+      $ Seq (Assign "z" (CInt 1))
+      $ Seq (If (Lt (V "n") (CInt 0)) (Fail) (Skip))
+      $ Seq (If (Eq (V "n") (CInt 0)) (Seq (SOut (V "x")) (Fail)) (Skip)) --corto programa con fail
+      $ Seq (If (Eq (V "n") (CInt 1)) (Seq (SOut (V "z")) (Fail)) (Skip))
+      $ Seq (Assign "i" (CInt 2))
+      $ Seq (While (Lt (V "i") (Plus (V "n") (CInt 1)))
+                  ( Seq (Assign "y" (Plus (V "x") (V "z")))
+                  $ Seq (Assign "x" (V "z"))
+                  $ Seq (Assign "z" (V "y"))
+                    (Assign "i" (Plus (V "i") (CInt 1)))
+                  ))
+      $ Seq (SOut (V "z"))
+      Skip
+      )
+
+
+eval_fibo :: IO ()
+eval_fibo = eval fibo (\_ -> 0)
