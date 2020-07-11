@@ -224,7 +224,16 @@ check_abort :: Ω -> Bool
 check_abort (Abort e) = True
 check_abort x = False
 
-{-
+
+ej1 :: Expr Ω
+ej1 = While (Lt (V "x") (CInt 10)) $
+            Seq (SOut $ V "x")
+                (Assign "x" (Plus (V "x") (CInt 1)))
+
+eval_ej1 :: IO ()
+eval_ej1 = eval ej1 (\_ -> 0)
+
+
 ej2 :: Expr Ω
 ej2 = While (Lt (V "y") (CInt 10)) $
             Seq (Seq (Seq (SIn "x")
@@ -233,6 +242,9 @@ ej2 = While (Lt (V "y") (CInt 10)) $
                      (SOut $ V "y")
                 )
                 (Assign "y" (Plus (V "y") (CInt 1)))
+
+eval_ej2 :: IO ()
+eval_ej2 = eval ej2 (\_ -> 0)
 
 
 ej3 :: Expr Ω
@@ -245,16 +257,6 @@ ej3 = Seq (Seq (SIn "x")
 
 eval_ej3 :: IO ()
 eval_ej3 = eval ej3 (\_ -> 0)
-
--}
-
-ej1 :: Expr Ω
-ej1 = While (Lt (V "x") (CInt 10)) $
-            Seq (SOut $ V "x")
-                (Assign "x" (Plus (V "x") (CInt 1)))
-
-eval_ej1 :: IO ()
-eval_ej1 = eval ej1 (\_ -> 0)
 
 
 
